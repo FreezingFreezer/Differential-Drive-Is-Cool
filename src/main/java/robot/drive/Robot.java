@@ -1,4 +1,5 @@
-package robot;
+package robot.drive;
+
 
 import static edu.wpi.first.units.Units.Seconds;
 import static robot.Constants.PERIOD;
@@ -18,7 +19,11 @@ import lib.FaultLogger;
 import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
+
+import com.revrobotics.RelativeEncoder;
+
 import robot.Ports.OI;
+
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -30,11 +35,16 @@ public class Robot extends CommandRobot implements Logged {
   // INPUT DEVICES
   private final CommandXboxController operator = new CommandXboxController(OI.OPERATOR);
   private final CommandXboxController driver = new CommandXboxController(OI.DRIVER);
-
+  private final RelativeEncoder leftEncoder = leftLeader.getEncoder();
+  private final RelativeEncoder rightEncoder = rightLeader.getEncoder();
   private final PowerDistribution pdh = new PowerDistribution();
 
   // SUBSYSTEMS
-
+  Drive drive = new Drive();
+  private void configureBindings() {
+    
+    drive.setDefaultCommand(drive.drive(driver::getLeftY, driver::getRightY));
+  }
   // COMMANDS
 
   /** The robot contains subsystems, OI devices, and commands. */
@@ -92,6 +102,7 @@ public class Robot extends CommandRobot implements Logged {
               operator.getHID().setRumble(rumbleType, 0);
             });
   }
+  
 
   @Override
   public void close() {
