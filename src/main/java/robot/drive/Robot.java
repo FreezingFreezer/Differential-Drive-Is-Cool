@@ -4,11 +4,14 @@ package robot.drive;
 import static edu.wpi.first.units.Units.Seconds;
 import static robot.Constants.PERIOD;
 
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -16,6 +19,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import lib.CommandRobot;
 import lib.FaultLogger;
+import monologue.Annotations.Log;
 import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
@@ -38,11 +42,12 @@ public class Robot extends CommandRobot implements Logged {
   private final RelativeEncoder leftEncoder = leftLeader.getEncoder();
   private final RelativeEncoder rightEncoder = rightLeader.getEncoder();
   private final PowerDistribution pdh = new PowerDistribution();
+    @Log.NT 
+  private final Field2d field2d = new Field2d();
 
   // SUBSYSTEMS
   Drive drive = new Drive();
   private void configureBindings() {
-    
     drive.setDefaultCommand(drive.drive(driver::getLeftY, driver::getRightY));
   }
   // COMMANDS
@@ -80,7 +85,6 @@ public class Robot extends CommandRobot implements Logged {
   }
 
   /** Configures trigger -> command bindings. */
-  private void configureBindings() {}
 
   /**
    * Command factory to make both controllers rumble.
@@ -108,4 +112,20 @@ public class Robot extends CommandRobot implements Logged {
   public void close() {
     super.close();
   }
+  public void drive(double leftSpeed, double rightSpeed, SimpleMotorFeedforward feedforward, PIDController leftPIDController, PIDController rightPIDController) {
+    final double realLeftSpeed = leftSpeed * DriveConstants.MAX_SPEED;
+    final double realRightSpeed = rightSpeed * DriveConstants.MAX_SPEED;
+    
+      final double leftFeedforward = feedforward.calculate(realLeftSpeed);
+      final double rightFeedforward = feedforward.calculate(realRightSpeed);
+  
+      final double leftPID = 
+        leftPIDController.calculate(leftEncoder.getVelocity(), realLeftSpeed);
+      final double rightPID = 
+        rightPIDController.calculate(rightEncoder.getVelocity(), realRightSpeed);
+    }
+    Monologue.setupMonologue(this, "/Robot", false, true);
+    addPeriodic(Monologue::updateAll, kDefaultPeriod);
+    addPeriodic(FaultLogger::update, 1);
+    
 }
